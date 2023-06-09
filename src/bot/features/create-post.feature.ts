@@ -1,19 +1,18 @@
 import { Composer, InlineKeyboard } from "grammy";
+import { createPostData } from "~/bot/callback-data";
 import type { Context } from "~/bot/context";
 import { logHandle } from "~/bot/helpers/logging";
-import { createPostData } from "../callback-data/create-post.data.ts";
-import { createPostKeyboard } from "../keyboards/create-post.keyboard.ts";
-import { createSettingsKeyboard } from "../keyboards/settings.keyboard.ts";
+import { createPostKeyboard, createUserSettingsKeyboard } from "../keyboards";
 
 const composer = new Composer<Context>();
 
 const feature = composer.chatType("private");
 
-feature.hears("Создать пост", logHandle("create post"), async (ctx) => {
+feature.hears("Создать пост", logHandle("create post"), async (ctx) =>
   ctx.reply(ctx.t("createPost"), {
-    reply_markup: await createPostKeyboard(ctx),
-  });
-});
+    reply_markup: createPostKeyboard(ctx),
+  })
+);
 
 feature.callbackQuery(
   createPostData.filter(),
@@ -21,30 +20,23 @@ feature.callbackQuery(
   async (ctx) => {
     const { chatId } = createPostData.unpack(ctx.callbackQuery.data);
 
-    const title = ctx.session.chatInfo.filter((obj) => {
-      return obj.chatId == chatId;
-    });
+    const title = ctx.session.chatInfo.filter((chat) => chat.chatId === chatId);
 
     feature.on(":text", logHandle("get text to send"), async (ctx) => {
-      const { text }  = ctx?.msg;
+      const { text } = ctx?.msg;
       ctx.reply(String(text), {
-        reply_markup:  await createSettingsKeyboard(ctx)
+        reply_markup: await createUserSettingsKeyboard(ctx),
       });
 
-
-
-    feature.callbackQuery(
-      "editMessage",
-      logHandle("editMessage"),
-      async (ctx) => {
-        ctx.reply("Отправь боту исправленный текст", {
-          reply_markup: new InlineKeyboard().text("Назад", "change-channel")
-        })
-      }
-    )
-
-
-
+      feature.callbackQuery(
+        "editMessage",
+        logHandle("editMessage"),
+        async (ctx) => {
+          ctx.reply("Отправь боту исправленный текст", {
+            reply_markup: new InlineKeyboard().text("Назад", "change-channel"),
+          });
+        }
+      );
 
       feature.callbackQuery("publish", logHandle("publish"), async (ctx) => {
         ctx.api.sendMessage(chatId, text);
@@ -54,8 +46,6 @@ feature.callbackQuery(
         ctx.answerCallbackQuery();
       });
     });
-
-
 
     ctx.editMessageText(
       ctx.t("publish", {

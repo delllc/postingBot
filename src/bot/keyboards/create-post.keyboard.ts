@@ -3,7 +3,7 @@ import _ from "lodash";
 import { createPostData } from "~/bot/callback-data";
 import type { Context } from "~/bot/context";
 
-export const createPostKeyboard = async (ctx: Context) => {
+export const createPostKeyboard = (ctx: Context) => {
   return new InlineKeyboard(
     _.chunk(
       ctx.session.chatInfo.map(({ title, chatId }) => ({
